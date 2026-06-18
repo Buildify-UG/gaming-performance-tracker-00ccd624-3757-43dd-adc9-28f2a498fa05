@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, Plane, CheckCircle, XCircle } from 'lucide-react';
 
-type GameState = 'intro' | 'scenario1' | 'scenario2' | 'scenario3' | 'ending';
+type GameState = 'difficulty' | 'intro' | 'scenario1' | 'scenario2' | 'scenario3' | 'ending';
 type Outcome = 'success' | 'crash' | 'disaster' | null;
+type Difficulty = 'easy' | 'hard';
 
 interface GameProgress {
   state: GameState;
   outcome: Outcome;
   decisions: string[];
+  difficulty: Difficulty;
   stats: {
     altitude: number;
     fuel: number;
@@ -19,9 +21,10 @@ interface GameProgress {
 
 export function EmergencyLanding() {
   const [game, setGame] = useState<GameProgress>({
-    state: 'intro',
+    state: 'difficulty',
     outcome: null,
     decisions: [],
+    difficulty: 'easy',
     stats: {
       altitude: 35000,
       fuel: 50,
@@ -29,7 +32,20 @@ export function EmergencyLanding() {
     },
   });
 
+  const startGame = (difficulty: Difficulty) => {
+    setGame((prev) => ({
+      ...prev,
+      state: 'intro',
+      difficulty,
+      stats:
+        difficulty === 'easy'
+          ? { altitude: 35000, fuel: 75, engineStatus: 100 }
+          : { altitude: 35000, fuel: 50, engineStatus: 100 },
+    }));
+  };
+
   const makeChoice = (choice: string, nextState: GameState, outcome?: Outcome) => {
+    const isEasy = game.difficulty === 'easy';
     setGame((prev) => ({
       ...prev,
       state: nextState,
@@ -37,12 +53,14 @@ export function EmergencyLanding() {
       decisions: [...prev.decisions, choice],
       stats:
         nextState === 'scenario1'
-          ? { altitude: 25000, fuel: 45, engineStatus: 60 }
+          ? isEasy
+            ? { altitude: 28000, fuel: 70, engineStatus: 75 }
+            : { altitude: 25000, fuel: 45, engineStatus: 60 }
           : nextState === 'scenario2'
             ? {
-                altitude: prev.stats.altitude - 5000,
-                fuel: prev.stats.fuel - 10,
-                engineStatus: prev.stats.engineStatus - 20,
+                altitude: prev.stats.altitude - (isEasy ? 3000 : 5000),
+                fuel: prev.stats.fuel - (isEasy ? 5 : 10),
+                engineStatus: prev.stats.engineStatus - (isEasy ? 10 : 20),
               }
             : prev.stats,
     }));
@@ -50,9 +68,10 @@ export function EmergencyLanding() {
 
   const restart = () => {
     setGame({
-      state: 'intro',
+      state: 'difficulty',
       outcome: null,
       decisions: [],
+      difficulty: 'easy',
       stats: {
         altitude: 35000,
         fuel: 50,
@@ -64,6 +83,38 @@ export function EmergencyLanding() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-400 to-sky-200 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-8 bg-white shadow-2xl">
+        {/* Difficulty Selection */}
+        {game.state === 'difficulty' && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Plane className="w-12 h-12 text-blue-600" />
+              <h1 className="text-4xl font-bold text-gray-900">Emergency Landing</h1>
+            </div>
+            <p className="text-lg text-gray-700">
+              Choose your difficulty level. Your choices will determine the fate of the aircraft and its passengers.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                size="lg"
+                onClick={() => startGame('easy')}
+                className="h-auto py-6 flex flex-col items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <span className="text-xl font-bold">Easy</span>
+                <span className="text-sm">More fuel, forgiving physics</span>
+              </Button>
+              <Button
+                size="lg"
+                onClick={() => startGame('hard')}
+                className="h-auto py-6 flex flex-col items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <span className="text-xl font-bold">Hard</span>
+                <span className="text-sm">Limited fuel, realistic physics</span>
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Intro Screen */}
         {game.state === 'intro' && (
           <div className="space-y-6">
@@ -75,6 +126,9 @@ export function EmergencyLanding() {
               You're the pilot of a commercial aircraft. Both engines are failing. You have minutes to make critical decisions that will determine the fate of your passengers.
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+              <p className="text-sm text-gray-700">
+                <strong>Difficulty:</strong> {game.difficulty === 'easy' ? '🟢 Easy' : '🔴 Hard'}
+              </p>
               <p className="text-sm text-gray-700">
                 <strong>Current Status:</strong> Altitude: {game.stats.altitude}ft | Fuel: {game.stats.fuel}% | Engines: {game.stats.engineStatus}%
               </p>
@@ -228,7 +282,9 @@ export function EmergencyLanding() {
                   <h2 className="text-3xl font-bold text-green-600">Success!</h2>
                 </div>
                 <p className="text-lg text-gray-700">
-                  Brilliant flying! You executed a perfect emergency landing. All 247 passengers and crew are safe. You're a hero.
+                  {game.difficulty === 'easy'
+                    ? 'Excellent work! You made smart decisions and brought everyone home safely. All 247 passengers and crew are grateful.'
+                    : 'Incredible flying under extreme pressure! You executed a perfect emergency landing with minimal margin for error. All 247 passengers and crew owe their lives to your skill.'}
                 </p>
               </>
             )}
@@ -240,7 +296,9 @@ export function EmergencyLanding() {
                   <h2 className="text-3xl font-bold text-yellow-600">Crash Landing</h2>
                 </div>
                 <p className="text-lg text-gray-700">
-                  The aircraft hits hard. Significant damage, but emergency services respond quickly. Most passengers survive, though some are injured. Your decisions saved lives.
+                  {game.difficulty === 'easy'
+                    ? 'The landing was rough but controlled. Emergency services are on scene. Most passengers walk away, some with minor injuries. You saved the day.'
+                    : 'The aircraft hits hard. Significant damage, but emergency services respond quickly. Most passengers survive, though some are injured. Your decisions saved lives.'}
                 </p>
               </>
             )}
@@ -252,7 +310,9 @@ export function EmergencyLanding() {
                   <h2 className="text-3xl font-bold text-red-600">Catastrophic Failure</h2>
                 </div>
                 <p className="text-lg text-gray-700">
-                  Fuel ran out mid-go-around. The aircraft lost altitude rapidly. Despite your efforts, the outcome was tragic. Sometimes there are no good choices.
+                  {game.difficulty === 'easy'
+                    ? 'Your decision to attempt another approach was too risky. Fuel ran out before you could land safely. The outcome was tragic.'
+                    : 'Fuel ran out mid-go-around. The aircraft lost altitude rapidly. Despite your efforts, the outcome was tragic. Sometimes there are no good choices.'}
                 </p>
               </>
             )}
