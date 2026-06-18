@@ -1,0 +1,8 @@
+ICON PLACEHOLDER - Replace with actual 512x512 PNG image
+This file should be replaced with a proper app icon image.
+Generate using: https://www.favicon-generator.org/ or similar tool
+Required files:
+- icon-192.png (192x192)
+- icon-512.png (512x512)
+- icon-maskable-192.png (192x192 with transparent background)
+- icon-maskable-512.png (512x512 with transparent background)
